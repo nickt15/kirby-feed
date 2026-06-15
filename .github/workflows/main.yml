@@ -1,0 +1,43 @@
+When I do this it works. 
+
+name: Test Kirby Feed
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download image
+        run: |
+          mkdir -p images
+
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i"
+            curl -L --http1.1 \
+              --connect-timeout 30 \
+              --max-time 120 \
+              --retry 3 \
+              --retry-delay 10 \
+              -A "Mozilla/5.0" \
+              -o images/2801.jpg \
+              https://codecraftsupport.com/Kirby/DATA/Images/2801.jpg && break
+
+            echo "Failed attempt $i"
+            sleep 20
+          done
+
+          ls -lh images
+
+      - name: Commit image
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git add .
+          git commit -m "Add test image" || echo "Nothing to commit"
+          git push
