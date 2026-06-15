@@ -133,6 +133,7 @@ async function main() {
     console.log(`Checking Kirby ${n}`);
 
     const ok = downloadWithCurl(url, filePath);
+await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
 
     if (!ok) continue;
 
