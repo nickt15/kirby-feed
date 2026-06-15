@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const https = require("https");
+const { execFileSync } = require("child_process");
 
 const FEED_PATH = path.join(__dirname, "latest.json");
 const IMAGES_DIR = path.join(__dirname, "images");
@@ -33,60 +33,42 @@ function saveFeed(feed) {
   fs.writeFileSync(FEED_PATH, JSON.stringify(feed, null, 2));
 }
 
-function downloadFile(url, filePath) {
-  return new Promise((resolve) => {
-    const file = fs.createWriteStream(filePath);
-
-    const req = https.get(
-      url,
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0"
-        },
-        timeout: 60000
-      },
-      (res) => {
-        if (res.statusCode !== 200) {
-          file.close();
-          fs.unlink(filePath, () => {});
-          console.log(`❌ Not found: ${url} (${res.statusCode})`);
-          return resolve(false);
-        }
-
-        res.pipe(file);
-
-        file.on("finish", () => {
-          file.close(() => {
-            const size = fs.statSync(filePath).size;
-
-            if (size < 100) {
-              fs.unlink(filePath, () => {});
-              console.log(`❌ Bad image size for ${url}`);
-              return resolve(false);
-            }
-
-            console.log(`✅ Downloaded ${path.basename(filePath)} (${size} bytes)`);
-            resolve(true);
-          });
-        });
-      }
-    );
-
-    req.on("timeout", () => {
-      req.destroy();
-      file.close();
-      fs.unlink(filePath, () => {});
-      console.log(`❌ Timeout: ${url}`);
-      resolve(false);
+function downloadWithCurl(url, filePath) {
+  try {
+    execFileSync("curl", [
+      "-L",
+      "--http1.1",
+      "--connect-timeout", "30",
+      "--max-time", "120",
+      "--retry", "3",
+      "--retry-delay", "10",
+      "-A", "Mozilla/5.0",
+      "-o", filePath,
+      url
+    ], {
+      stdio: "inherit"
     });
 
-    req.on("error", (err) => {
-      file.close();
-      fs.unlink(filePath, () => {});
-      console.log(`❌ Error downloading ${url}: ${err.message}`);
-      resolve(false);
-    });
-  });
+    if (!fs.existsSync(filePath)) return false;
+
+    const size = fs.statSync(filePath).size;
+
+    if (size < 100) {
+      fs.unlinkSync(filePath);
+      return false;
+    }
+
+    console.log(`✅ Downloaded ${path.basename(filePath)} (${size} bytes)`);
+    return true;
+
+  } catch (err) {
+    if (fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch {}
+    }
+
+    console.log(`❌ Failed: ${url}`);
+    return false;
+  }
 }
 
 async function main() {
@@ -116,11 +98,9 @@ async function main() {
 
     console.log(`Checking Kirby ${n}`);
 
-    const ok = await downloadFile(url, filePath);
+    const ok = downloadWithCurl(url, filePath);
 
-    if (!ok) {
-      continue;
-    }
+    if (!ok) continue;
 
     if (!feed.kirbys.includes(n)) {
       feed.kirbys.push(n);
@@ -133,7 +113,6 @@ async function main() {
 
   feed.latestKirby = highestFound;
   feed.updatedAt = new Date().toISOString();
-
   feed.kirbys = [...new Set(feed.kirbys)].sort((a, b) => a - b);
 
   saveFeed(feed);
