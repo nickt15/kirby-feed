@@ -1,0 +1,14 @@
+name: Test CodeCraft
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test image
+        run: |
+          echo "Testing..."
+          curl -I -L --max-time 30 https://codecraftsupport.com/Kirby/DATA/Images/2760.jpg
