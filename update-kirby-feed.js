@@ -5,7 +5,7 @@ const { execFileSync } = require("child_process");
 const FEED_PATH = path.join(__dirname, "latest.json");
 const IMAGES_DIR = path.join(__dirname, "images");
 
-const SCAN_AHEAD = 1;
+const SCAN_AHEAD = 5;
 const BASE_URL = "https://codecraftsupport.com/Kirby/DATA/Images";
 
 function loadFeed() {
@@ -39,7 +39,7 @@ function isRealJpg(filePath) {
 
     if (buffer.length < 100) return false;
 
-    // JPG files start with FF D8
+    // JPG magic bytes
     if (buffer[0] !== 0xff || buffer[1] !== 0xd8) {
       return false;
     }
@@ -54,7 +54,6 @@ function downloadWithCurl(url, filePath) {
   try {
     execFileSync("curl", [
       "-L",
-      "-f",
       "--http1.1",
       "--connect-timeout", "30",
       "--max-time", "120",
@@ -121,12 +120,12 @@ async function main() {
         console.log(`❌ Removed bad cached file: ${fileName}`);
       } else {
         console.log(`Already have ${fileName}`);
-        highestFound = Math.max(highestFound, n);
 
         if (!feed.kirbys.includes(n)) {
           feed.kirbys.push(n);
         }
 
+        highestFound = Math.max(highestFound, n);
         continue;
       }
     }
