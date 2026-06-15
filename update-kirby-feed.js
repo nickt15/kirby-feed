@@ -11,7 +11,7 @@ const BASE_URL = "https://codecraftsupport.com/Kirby/DATA/Images";
 function loadFeed() {
   if (!fs.existsSync(FEED_PATH)) {
     return {
-      latestKirby: 2799,
+      latestKirby: 2800,
       kirbys: []
     };
   }
@@ -19,7 +19,7 @@ function loadFeed() {
   const feed = JSON.parse(fs.readFileSync(FEED_PATH, "utf8"));
 
   if (typeof feed.latestKirby !== "number") {
-    feed.latestKirby = 2799;
+    feed.latestKirby = 2800;
   }
 
   if (!Array.isArray(feed.kirbys)) {
@@ -33,10 +33,28 @@ function saveFeed(feed) {
   fs.writeFileSync(FEED_PATH, JSON.stringify(feed, null, 2));
 }
 
+function isRealJpg(filePath) {
+  try {
+    const buffer = fs.readFileSync(filePath);
+
+    if (buffer.length < 100) return false;
+
+    // JPG files start with FF D8
+    if (buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function downloadWithCurl(url, filePath) {
   try {
     execFileSync("curl", [
       "-L",
+      "-f",
       "--http1.1",
       "--connect-timeout", "30",
       "--max-time", "120",
@@ -55,6 +73,13 @@ function downloadWithCurl(url, filePath) {
 
     if (size < 100) {
       fs.unlinkSync(filePath);
+      console.log(`❌ Bad image size: ${filePath}`);
+      return false;
+    }
+
+    if (!isRealJpg(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`❌ Not a real JPG, removed: ${filePath}`);
       return false;
     }
 
@@ -91,9 +116,19 @@ async function main() {
     const url = `${BASE_URL}/${fileName}`;
 
     if (fs.existsSync(filePath)) {
-      console.log(`Already have ${fileName}`);
-      highestFound = Math.max(highestFound, n);
-      continue;
+      if (!isRealJpg(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`❌ Removed bad cached file: ${fileName}`);
+      } else {
+        console.log(`Already have ${fileName}`);
+        highestFound = Math.max(highestFound, n);
+
+        if (!feed.kirbys.includes(n)) {
+          feed.kirbys.push(n);
+        }
+
+        continue;
+      }
     }
 
     console.log(`Checking Kirby ${n}`);
