@@ -1,9 +1,10 @@
 name: Kirby Feed Updater
 
 on:
-  schedule:
-    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
+
+  schedule:
+    - cron: '*/15 * * * *'
 
 jobs:
   update:
