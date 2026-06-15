@@ -1,4 +1,4 @@
-name: Test CodeCraft
+name: Download Test
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test image
+      - name: Download image
         run: |
-          echo "Testing..."
-          curl -I -L --max-time 30 https://codecraftsupport.com/Kirby/DATA/Images/2760.jpg
+          curl -L -o 2760.jpg https://codecraftsupport.com/Kirby/DATA/Images/2760.jpg
+          ls -lh 2760.jpg
