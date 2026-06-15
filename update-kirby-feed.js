@@ -1,5 +1,3 @@
-Okay this one worked but it was getting the 404 that didn’t exist. 
-
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
