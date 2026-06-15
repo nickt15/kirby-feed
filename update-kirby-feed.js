@@ -1,3 +1,5 @@
+Okay this one worked but it was getting the 404 that didn’t exist. 
+
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
@@ -33,45 +35,10 @@ function saveFeed(feed) {
   fs.writeFileSync(FEED_PATH, JSON.stringify(feed, null, 2));
 }
 
-function isRealJpg(filePath) {
-  try {
-    const buffer = fs.readFileSync(filePath);
-
-    if (buffer.length < 100) return false;
-
-    // Real JPG files start with FF D8 and usually end with FF D9
-    const startsLikeJpg = buffer[0] === 0xff && buffer[1] === 0xd8;
-    const endsLikeJpg =
-      buffer[buffer.length - 2] === 0xff &&
-      buffer[buffer.length - 1] === 0xd9;
-
-    if (!startsLikeJpg) return false;
-
-    // If CodeCraft sends an HTML 404 saved as .jpg, reject it
-    const startText = buffer
-      .toString("utf8", 0, Math.min(buffer.length, 500))
-      .toLowerCase();
-
-    if (
-      startText.includes("<!doctype html") ||
-      startText.includes("<html") ||
-      startText.includes("404 not found") ||
-      startText.includes("resource requested could not be found")
-    ) {
-      return false;
-    }
-
-    return true || endsLikeJpg;
-  } catch {
-    return false;
-  }
-}
-
 function downloadWithCurl(url, filePath) {
   try {
     execFileSync("curl", [
       "-L",
-      "-f",
       "--http1.1",
       "--connect-timeout", "30",
       "--max-time", "120",
@@ -90,13 +57,6 @@ function downloadWithCurl(url, filePath) {
 
     if (size < 100) {
       fs.unlinkSync(filePath);
-      console.log(`❌ Bad image size: ${filePath}`);
-      return false;
-    }
-
-    if (!isRealJpg(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`❌ Not a real JPG, removed: ${filePath}`);
       return false;
     }
 
@@ -133,19 +93,9 @@ async function main() {
     const url = `${BASE_URL}/${fileName}`;
 
     if (fs.existsSync(filePath)) {
-      if (!isRealJpg(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log(`❌ Removed bad cached file: ${fileName}`);
-      } else {
-        console.log(`Already have ${fileName}`);
-        highestFound = Math.max(highestFound, n);
-
-        if (!feed.kirbys.includes(n)) {
-          feed.kirbys.push(n);
-        }
-
-        continue;
-      }
+      console.log(`Already have ${fileName}`);
+      highestFound = Math.max(highestFound, n);
+      continue;
     }
 
     console.log(`Checking Kirby ${n}`);
