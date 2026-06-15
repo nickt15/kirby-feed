@@ -5,13 +5,13 @@ const { execFileSync } = require("child_process");
 const FEED_PATH = path.join(__dirname, "latest.json");
 const IMAGES_DIR = path.join(__dirname, "images");
 
-const SCAN_AHEAD = 5;
+const SCAN_AHEAD = 1;
 const BASE_URL = "https://codecraftsupport.com/Kirby/DATA/Images";
 
 function loadFeed() {
   if (!fs.existsSync(FEED_PATH)) {
     return {
-      latestKirby: 2799,
+      latestKirby: 2800,
       kirbys: []
     };
   }
@@ -19,7 +19,7 @@ function loadFeed() {
   const feed = JSON.parse(fs.readFileSync(FEED_PATH, "utf8"));
 
   if (typeof feed.latestKirby !== "number") {
-    feed.latestKirby = 2799;
+    feed.latestKirby = 2800;
   }
 
   if (!Array.isArray(feed.kirbys)) {
