@@ -5,7 +5,7 @@ const https = require("https");
 const FEED_PATH = path.join(__dirname, "latest.json");
 const IMAGES_DIR = path.join(__dirname, "images");
 
-const SCAN_AHEAD = 5;
+const SCAN_AHEAD = 1;
 const BASE_URL = "https://codecraftsupport.com/Kirby/DATA/Images";
 
 function loadFeed() {
