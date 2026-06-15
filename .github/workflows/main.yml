@@ -1,0 +1,13 @@
+name: Test Single Kirby
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get image headers only
+        run: |
+          curl -I -L --max-time 30 https://codecraftsupport.com/Kirby/DATA/Images/2760.jpg
