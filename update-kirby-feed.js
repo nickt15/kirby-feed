@@ -33,16 +33,35 @@ function saveFeed(feed) {
   fs.writeFileSync(FEED_PATH, JSON.stringify(feed, null, 2));
 }
 
-function isBadHtmlFile(filePath) {
+function isRealJpg(filePath) {
   try {
-    const content = fs.readFileSync(filePath, "utf8");
+    const buffer = fs.readFileSync(filePath);
 
-    return (
-      content.includes("<!DOCTYPE html>") ||
-      content.includes("<html") ||
-      content.includes("404 Not Found") ||
-      content.includes("The resource requested could not be found")
-    );
+    if (buffer.length < 100) return false;
+
+    // Real JPG files start with FF D8 and usually end with FF D9
+    const startsLikeJpg = buffer[0] === 0xff && buffer[1] === 0xd8;
+    const endsLikeJpg =
+      buffer[buffer.length - 2] === 0xff &&
+      buffer[buffer.length - 1] === 0xd9;
+
+    if (!startsLikeJpg) return false;
+
+    // If CodeCraft sends an HTML 404 saved as .jpg, reject it
+    const startText = buffer
+      .toString("utf8", 0, Math.min(buffer.length, 500))
+      .toLowerCase();
+
+    if (
+      startText.includes("<!doctype html") ||
+      startText.includes("<html") ||
+      startText.includes("404 not found") ||
+      startText.includes("resource requested could not be found")
+    ) {
+      return false;
+    }
+
+    return true || endsLikeJpg;
   } catch {
     return false;
   }
@@ -75,9 +94,9 @@ function downloadWithCurl(url, filePath) {
       return false;
     }
 
-    if (isBadHtmlFile(filePath)) {
+    if (!isRealJpg(filePath)) {
       fs.unlinkSync(filePath);
-      console.log(`❌ 404/html page saved instead of image: ${filePath}`);
+      console.log(`❌ Not a real JPG, removed: ${filePath}`);
       return false;
     }
 
@@ -114,7 +133,7 @@ async function main() {
     const url = `${BASE_URL}/${fileName}`;
 
     if (fs.existsSync(filePath)) {
-      if (isBadHtmlFile(filePath)) {
+      if (!isRealJpg(filePath)) {
         fs.unlinkSync(filePath);
         console.log(`❌ Removed bad cached file: ${fileName}`);
       } else {
