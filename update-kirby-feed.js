@@ -33,10 +33,26 @@ function saveFeed(feed) {
   fs.writeFileSync(FEED_PATH, JSON.stringify(feed, null, 2));
 }
 
+function isBadHtmlFile(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, "utf8");
+
+    return (
+      content.includes("<!DOCTYPE html>") ||
+      content.includes("<html") ||
+      content.includes("404 Not Found") ||
+      content.includes("The resource requested could not be found")
+    );
+  } catch {
+    return false;
+  }
+}
+
 function downloadWithCurl(url, filePath) {
   try {
     execFileSync("curl", [
       "-L",
+      "-f",
       "--http1.1",
       "--connect-timeout", "30",
       "--max-time", "120",
@@ -55,6 +71,13 @@ function downloadWithCurl(url, filePath) {
 
     if (size < 100) {
       fs.unlinkSync(filePath);
+      console.log(`❌ Bad image size: ${filePath}`);
+      return false;
+    }
+
+    if (isBadHtmlFile(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`❌ 404/html page saved instead of image: ${filePath}`);
       return false;
     }
 
@@ -91,9 +114,19 @@ async function main() {
     const url = `${BASE_URL}/${fileName}`;
 
     if (fs.existsSync(filePath)) {
-      console.log(`Already have ${fileName}`);
-      highestFound = Math.max(highestFound, n);
-      continue;
+      if (isBadHtmlFile(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`❌ Removed bad cached file: ${fileName}`);
+      } else {
+        console.log(`Already have ${fileName}`);
+        highestFound = Math.max(highestFound, n);
+
+        if (!feed.kirbys.includes(n)) {
+          feed.kirbys.push(n);
+        }
+
+        continue;
+      }
     }
 
     console.log(`Checking Kirby ${n}`);
