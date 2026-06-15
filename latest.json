@@ -1,6 +1,8 @@
 {
-  "latestKirby": 2800,
+  "latestKirby": 2801,
   "Kirbys": [],
-  "kirbys": [],
-  "updatedAt": "2026-06-15T12:32:49.630Z"
+  "kirbys": [
+    2801
+  ],
+  "updatedAt": "2026-06-15T13:16:49.236Z"
 }
