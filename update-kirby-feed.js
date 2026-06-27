@@ -48,12 +48,7 @@ function isRealJpg(filePath) {
 
     if (buffer.length < 100) return false;
 
-    // JPG magic bytes
-    if (buffer[0] !== 0xff || buffer[1] !== 0xd8) {
-      return false;
-    }
-
-    return true;
+    return buffer[0] === 0xff && buffer[1] === 0xd8;
   } catch {
     return false;
   }
@@ -92,10 +87,11 @@ function downloadWithCurl(url, filePath) {
 
     console.log(`✅ Downloaded ${path.basename(filePath)} (${size} bytes)`);
     return true;
-
-  } catch (err) {
+  } catch {
     if (fs.existsSync(filePath)) {
-      try { fs.unlinkSync(filePath); } catch {}
+      try {
+        fs.unlinkSync(filePath);
+      } catch {}
     }
 
     console.log(`❌ Failed: ${url}`);
@@ -106,38 +102,35 @@ function downloadWithCurl(url, filePath) {
 async function scrapeSpecials() {
   try {
     console.log("🔍 Scraping gallery_specials.html...");
+
     const { data } = await axios.get(SPECIALS_PAGE, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      },
       timeout: 10000
     });
 
     const $ = cheerio.load(data);
-    const specialUrls = [];
+    const specialUrls = new Set();
 
-    // Find all image links
-    $('img, a[href*=".jpg"], a[href*=".jpeg"]').each((_, elem) => {
-      let url = null;
+    $("[href], [src]").each((_, elem) => {
+      const href = $(elem).attr("href");
+      const src = $(elem).attr("src");
 
-      if (elem.name === 'img') {
-        url = $(elem).attr('src');
-      } else {
-        url = $(elem).attr('href');
-      }
+      for (let url of [href, src]) {
+        if (!url) continue;
 
-      if (url && (url.includes('.jpg') || url.includes('.jpeg'))) {
-        // Convert to absolute URL if relative
-        if (!url.startsWith('http')) {
+        if (/\.jpe?g(\?|$)/i.test(url)) {
           url = new URL(url, SPECIALS_PAGE).href;
+          specialUrls.add(url);
         }
-        specialUrls.push(url);
       }
     });
 
-    console.log(`Found ${specialUrls.length} special Kirby URLs`);
-    return [...new Set(specialUrls)]; // Remove duplicates
-
+    console.log(`Found ${specialUrls.size} special Kirby URLs`);
+    return [...specialUrls];
   } catch (err) {
-    console.log(`⚠️  Failed to scrape specials page: ${err.message}`);
+    console.log(`⚠️ Failed to scrape specials page: ${err.message}`);
     return [];
   }
 }
@@ -146,7 +139,7 @@ async function downloadSpecials(feed) {
   const specialUrls = await scrapeSpecials();
 
   if (specialUrls.length === 0) {
-    console.log("ℹ️  No special Kirbys found");
+    console.log("ℹ️ No special Kirbys found");
     return;
   }
 
@@ -155,16 +148,21 @@ async function downloadSpecials(feed) {
   }
 
   for (const url of specialUrls) {
-    // Extract filename from URL (before query params)
-    const fileName = url.split('/').pop().split('?')[0];
+    const fileName = url.split("/").pop().split("?")[0];
     const filePath = path.join(SPECIALS_DIR, fileName);
+
+    if (!fileName.toLowerCase().endsWith(".jpg") && !fileName.toLowerCase().endsWith(".jpeg")) {
+      continue;
+    }
 
     if (fs.existsSync(filePath)) {
       if (isRealJpg(filePath)) {
         console.log(`Already have special ${fileName}`);
+
         if (!feed.specials.includes(fileName)) {
           feed.specials.push(fileName);
         }
+
         continue;
       } else {
         fs.unlinkSync(filePath);
@@ -173,8 +171,10 @@ async function downloadSpecials(feed) {
     }
 
     console.log(`Downloading special: ${fileName}`);
+
     const ok = downloadWithCurl(url, filePath);
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     if (ok && !feed.specials.includes(fileName)) {
       feed.specials.push(fileName);
@@ -187,12 +187,14 @@ async function main() {
     fs.mkdirSync(IMAGES_DIR, { recursive: true });
   }
 
+  if (!fs.existsSync(SPECIALS_DIR)) {
+    fs.mkdirSync(SPECIALS_DIR, { recursive: true });
+  }
+
   const feed = loadFeed();
 
-  // Download specials first
   await downloadSpecials(feed);
 
-  // Then download regular Kirbys
   let highestFound = feed.latestKirby;
   const start = feed.latestKirby + 1;
   const end = feed.latestKirby + SCAN_AHEAD;
@@ -224,7 +226,8 @@ async function main() {
     console.log(`Checking Kirby ${n}`);
 
     const ok = downloadWithCurl(url, filePath);
-    await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     if (!ok) continue;
 
