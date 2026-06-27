@@ -113,6 +113,7 @@ async function scrapeSpecials() {
     const $ = cheerio.load(data);
     const specialUrls = new Set();
 
+    // Method 1: Find actual JPG/JPEG links in href or src
     $("[href], [src]").each((_, elem) => {
       const href = $(elem).attr("href");
       const src = $(elem).attr("src");
@@ -127,7 +128,23 @@ async function scrapeSpecials() {
       }
     });
 
+    // Method 2: Find Kirby numbers in page text like:
+    // Kirby #20181201
+    // Kirby 20250428
+    const pageText = $.text();
+    const matches = pageText.matchAll(/Kirby\s*#?\s*(\d{4,})/gi);
+
+    for (const match of matches) {
+      const number = match[1];
+      specialUrls.add(`${BASE_URL}/${number}.jpg`);
+    }
+
     console.log(`Found ${specialUrls.size} special Kirby URLs`);
+
+    for (const url of specialUrls) {
+      console.log(`Special found: ${url}`);
+    }
+
     return [...specialUrls];
   } catch (err) {
     console.log(`⚠️ Failed to scrape specials page: ${err.message}`);
@@ -151,7 +168,10 @@ async function downloadSpecials(feed) {
     const fileName = url.split("/").pop().split("?")[0];
     const filePath = path.join(SPECIALS_DIR, fileName);
 
-    if (!fileName.toLowerCase().endsWith(".jpg") && !fileName.toLowerCase().endsWith(".jpeg")) {
+    if (
+      !fileName.toLowerCase().endsWith(".jpg") &&
+      !fileName.toLowerCase().endsWith(".jpeg")
+    ) {
       continue;
     }
 
