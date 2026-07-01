@@ -8,7 +8,8 @@ const FEED_PATH = path.join(__dirname, "latest.json");
 const IMAGES_DIR = path.join(__dirname, "images");
 const SPECIALS_DIR = path.join(__dirname, "images", "specials");
 
-const SCAN_AHEAD = 5;
+const SCAN_AHEAD = 15;
+const BACKFILL_BEHIND = 15;
 const BASE_URL = "https://codecraftsupport.com/Kirby/DATA/Images";
 const SPECIALS_PAGE = "https://codecraftsupport.com/Kirby/gallery_specials.html";
 
@@ -216,7 +217,7 @@ async function main() {
   await downloadSpecials(feed);
 
   let highestFound = feed.latestKirby;
-  const start = feed.latestKirby + 1;
+  const start = Math.max(1, feed.latestKirby - BACKFILL_BEHIND);
   const end = feed.latestKirby + SCAN_AHEAD;
 
   console.log(`\nStarting at ${feed.latestKirby}`);
