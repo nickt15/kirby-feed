@@ -8,7 +8,7 @@ const FEED_PATH = path.join(__dirname, "latest.json");
 const IMAGES_DIR = path.join(__dirname, "images");
 const SPECIALS_DIR = path.join(__dirname, "images", "specials");
 
-const SCAN_AHEAD = 50;
+const SCAN_AHEAD = 16;
 const BACKFILL_BEHIND = 16;
 const BASE_URL = "https://codecraftsupport.com/Kirby/DATA/Images";
 const SPECIALS_PAGE = "https://codecraftsupport.com/Kirby/gallery_specials.html";
