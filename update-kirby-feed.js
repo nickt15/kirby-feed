@@ -9,7 +9,7 @@ const IMAGES_DIR = path.join(__dirname, "images");
 const SPECIALS_DIR = path.join(__dirname, "images", "specials");
 
 const SCAN_AHEAD = 16;
-const BACKFILL_BEHIND = 16;
+const BACKFILL_BEHIND = 50;
 const BASE_URL = "https://codecraftsupport.com/Kirby/DATA/Images";
 const SPECIALS_PAGE = "https://codecraftsupport.com/Kirby/gallery_specials.html";
 
