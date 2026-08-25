@@ -60,8 +60,8 @@ function downloadWithCurl(url, filePath) {
     execFileSync("curl", [
       "-L",
       "--http1.1",
-      "--connect-timeout", "30",
-      "--max-time", "120",
+      "--connect-timeout", "60",
+      "--max-time", "300",
       "--retry", "0",
       "-A", "Mozilla/5.0",
       "-o", filePath,
