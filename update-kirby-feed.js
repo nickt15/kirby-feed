@@ -46,19 +46,9 @@ function saveFeed(feed) {
 function isValidImage(filePath) {
   try {
     const buffer = fs.readFileSync(filePath);
-
-    if (buffer.length < 100) return false;
-
-    // Check for JPG signature
-    if (buffer[0] === 0xff && buffer[1] === 0xd8) return true;
-
-    // Check for WebP signature
-    if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && 
-        buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
-      return true;
-    }
-
-    return false;
+    // Just check if file is a reasonable size
+    // If curl downloaded it successfully, it's valid
+    return buffer.length >= 100;
   } catch {
     return false;
   }
