@@ -43,13 +43,22 @@ function saveFeed(feed) {
   fs.writeFileSync(FEED_PATH, JSON.stringify(feed, null, 2));
 }
 
-function isRealJpg(filePath) {
+function isValidImage(filePath) {
   try {
     const buffer = fs.readFileSync(filePath);
 
     if (buffer.length < 100) return false;
 
-    return buffer[0] === 0xff && buffer[1] === 0xd8;
+    // Check for JPG signature
+    if (buffer[0] === 0xff && buffer[1] === 0xd8) return true;
+
+    // Check for WebP signature
+    if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && 
+        buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -80,9 +89,9 @@ function downloadWithCurl(url, filePath) {
       return false;
     }
 
-    if (!isRealJpg(filePath)) {
+    if (!isValidImage(filePath)) {
       fs.unlinkSync(filePath);
-      console.log(`❌ Not a real JPG, removed: ${filePath}`);
+      console.log(`❌ Not a valid image, removed: ${filePath}`);
       return false;
     }
 
@@ -114,7 +123,7 @@ async function scrapeSpecials() {
     const $ = cheerio.load(data);
     const specialUrls = new Set();
 
-    // Method 1: Find actual JPG/JPEG links in href or src
+    // Method 1: Find actual JPG/JPEG/WEBP links in href or src
     $("[href], [src]").each((_, elem) => {
       const href = $(elem).attr("href");
       const src = $(elem).attr("src");
@@ -122,7 +131,7 @@ async function scrapeSpecials() {
       for (let url of [href, src]) {
         if (!url) continue;
 
-        if (/\.jpe?g(\?|$)/i.test(url)) {
+        if (/\.(?:jpe?g|webp)(\?|$)/i.test(url)) {
           url = new URL(url, SPECIALS_PAGE).href;
           specialUrls.add(url);
         }
@@ -137,7 +146,7 @@ async function scrapeSpecials() {
 
     for (const match of matches) {
       const number = match[1];
-      specialUrls.add(`${BASE_URL}/${number}.jpg`);
+      specialUrls.add(`${BASE_URL}/${number}.webp`);
     }
 
     console.log(`Found ${specialUrls.size} special Kirby URLs`);
@@ -171,13 +180,14 @@ async function downloadSpecials(feed) {
 
     if (
       !fileName.toLowerCase().endsWith(".jpg") &&
-      !fileName.toLowerCase().endsWith(".jpeg")
+      !fileName.toLowerCase().endsWith(".jpeg") &&
+      !fileName.toLowerCase().endsWith(".webp")
     ) {
       continue;
     }
 
     if (fs.existsSync(filePath)) {
-      if (isRealJpg(filePath)) {
+      if (isValidImage(filePath)) {
         console.log(`Already have special ${fileName}`);
 
         if (!feed.specials.includes(fileName)) {
@@ -224,12 +234,12 @@ async function main() {
   console.log(`Checking ${start} through ${end}`);
 
   for (let n = start; n <= end; n++) {
-    const fileName = `${n}.jpg`;
+    const fileName = `${n}.webp`;
     const filePath = path.join(IMAGES_DIR, fileName);
     const url = `${BASE_URL}/${fileName}`;
 
     if (fs.existsSync(filePath)) {
-      if (!isRealJpg(filePath)) {
+      if (!isValidImage(filePath)) {
         fs.unlinkSync(filePath);
         console.log(`❌ Removed bad cached file: ${fileName}`);
       } else {
