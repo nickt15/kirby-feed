@@ -63,7 +63,7 @@ function downloadWithCurl(url, filePath) {
       "--connect-timeout", "60",
       "--max-time", "300",
       "--retry", "0",
-      "-A", "Mozilla/5.0",
+      "-A", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       "-o", filePath,
       url
     ], {
@@ -106,7 +106,7 @@ async function scrapeSpecials() {
 
     const { data } = await axios.get(SPECIALS_PAGE, {
       headers: {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
       },
       timeout: 10000
     });
@@ -195,7 +195,7 @@ async function downloadSpecials(feed) {
 
     const ok = downloadWithCurl(url, filePath);
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     if (ok && !feed.specials.includes(fileName)) {
       feed.specials.push(fileName);
@@ -248,7 +248,7 @@ async function main() {
 
     const ok = downloadWithCurl(url, filePath);
 
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     if (!ok) continue;
 
