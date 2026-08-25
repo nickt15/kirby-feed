@@ -85,7 +85,7 @@ function downloadWithCurl(url, filePath) {
       return false;
     }
 
-    console.log(`✅ Downloaded ${path.basename(filePath)} (${size} bytes)`);
+    console.log(`��� Downloaded ${path.basename(filePath)} (${size} bytes)`);
     return true;
   } catch {
     if (fs.existsSync(filePath)) {
@@ -166,7 +166,9 @@ async function downloadSpecials(feed) {
 
   for (const url of specialUrls) {
     const fileName = url.split("/").pop().split("?")[0];
-    const filePath = path.join(SPECIALS_DIR, fileName);
+    // Save as .jpg instead of keeping original extension
+    const jpgFileName = fileName.replace(/\.(webp|jpeg?)$/i, ".jpg");
+    const filePath = path.join(SPECIALS_DIR, jpgFileName);
 
     if (
       !fileName.toLowerCase().endsWith(".jpg") &&
@@ -178,27 +180,27 @@ async function downloadSpecials(feed) {
 
     if (fs.existsSync(filePath)) {
       if (isValidImage(filePath)) {
-        console.log(`Already have special ${fileName}`);
+        console.log(`Already have special ${jpgFileName}`);
 
-        if (!feed.specials.includes(fileName)) {
-          feed.specials.push(fileName);
+        if (!feed.specials.includes(jpgFileName)) {
+          feed.specials.push(jpgFileName);
         }
 
         continue;
       } else {
         fs.unlinkSync(filePath);
-        console.log(`❌ Removed bad cached special: ${fileName}`);
+        console.log(`❌ Removed bad cached special: ${jpgFileName}`);
       }
     }
 
-    console.log(`Downloading special: ${fileName}`);
+    console.log(`Downloading special: ${jpgFileName}`);
 
     const ok = downloadWithCurl(url, filePath);
 
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    if (ok && !feed.specials.includes(fileName)) {
-      feed.specials.push(fileName);
+    if (ok && !feed.specials.includes(jpgFileName)) {
+      feed.specials.push(jpgFileName);
     }
   }
 }
@@ -224,9 +226,9 @@ async function main() {
   console.log(`Checking ${start} through ${end}`);
 
   for (let n = start; n <= end; n++) {
-    const fileName = `${n}.webp`;
+    const fileName = `${n}.jpg`;
     const filePath = path.join(IMAGES_DIR, fileName);
-    const url = `${BASE_URL}/${fileName}`;
+    const url = `${BASE_URL}/${n}.webp`;
 
     if (fs.existsSync(filePath)) {
       if (!isValidImage(filePath)) {
